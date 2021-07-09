@@ -76,6 +76,7 @@ scene("main", () => {
 	});
 
 	mort.collides("pipe", () => {
+		camShake(12);
 		go("gameover", score.value);
 	});
 
@@ -144,6 +145,8 @@ scene("main", () => {
 
 scene("gameover", (score) => {
 
+	camShake(12);
+	
 	add([rect(1500, 650), color(0, 0, 0), origin("center"), pos(0, 0)])
 
 	add([
