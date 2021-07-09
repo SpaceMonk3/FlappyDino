@@ -1,44 +1,29 @@
 kaboom({
-  global: true,
-  fullscreen: true,
+	global: true,
+	fullscreen: true,
 	debug: true,
 	scale: 2
 })
 
-//loadRoot("/assets/dino/sheets");
-//loadSprite("doux", "doux.png");
-loadSprite("grass", "/assets/grass.png");
 loadSprite("mort", "/assets/dino/gifs/mort.gif");
-loadSprite("doux", "/assets/dino/sheets/doux.png", {
-  sliceX: 24, // Width of each frame
-  sliceY: 24, // Height of each frame
-  anims: {
-    main: {
-      from: 0, // Range of frames for main animation
-      to: 23,
-    },
-    running: {
-      from: 24, // Range of frames for running animation
-      to: 47,
-    }
-  }
-})
 
 scene("main", () => {
 
-	
-	add([rect(1500, 650), color(0, 123, 123), origin("center"), pos(0, 0)])
+	//layers
 
-	const dino1 = add([sprite("doux"), pos(80, 80), scale(4)])
-  //const dino2 = add([sprite("dino2"), pos(100, 0), scale(4)])
-  //const dino3 = add([sprite("dino3"), pos(200, 0), scale(4)])
-  //const dino4 = add([sprite("dino4"), pos(300, 0), scale(4)])
+	layers([
+		"game",
+		"ui",
+	], "game");
 
-  dino1.play("main")
-  //dino2.play("main")
-  //dino3.play("main")
-  //dino4.play("main")
+	//variables
 
+	const PIPE_OPEN = 100;
+	const PIPE_SPEED = 100;
+
+  //adding background and player (dino)
+
+	add([rect(1500, 650), color(0, 0, 0), origin("center"), pos(0, 0)])
 
 	const mort = add([
 		sprite("mort"),
@@ -46,21 +31,43 @@ scene("main", () => {
 		body(),
 	]);
 
-	keyPress('w', () => {mort.jump(350)})
-	keyDown('d', () => {mort.move(100, 0)})
-	keyDown('a', () => {mort.move(-100, 0)})
+	keyPress('w', () => { mort.jump(350) })
+	
+	//adding start text
 
-  add([text("Hello Human!", 32), pos(300, 115), color(55, 1, 25), origin("center")])
+	add([
+		text("Hello Human!", 32), 
+		pos(300, 115), 
+		color(55, 1, 25), 
+		origin("center"),
+		"text"	
+	])
 
-  add([
-    text("Very Cool. Use wasd, space to restart", 8),
-    pos(300, 160),
-    color(255, 155, 255),
-    origin("center"),
-  ])
+	add([
+		text("Very Cool. Use W to jump & space to restart", 8),
+		pos(300, 160),
+		color(255, 155, 255),
+		origin("center"),
+		"text"
+	])
 
-	keyPress('space', () => {go('main')})
+	//move text left and destroy
 
+	action("text", (text) => {
+
+		text.move(-PIPE_SPEED, 0);
+
+		if (text.pos.x + text.width < 0) {
+			destroy(text);
+		}
+
+	});
+
+	//hit space to restart
+
+	keyPress('space', () => { go('main') })
+
+  //checking lose conditions
 
 	mort.action(() => {
 		if (mort.pos.y >= height()) {
@@ -68,19 +75,59 @@ scene("main", () => {
 		}
 	});
 
-
-
-	const floor = addLevel(["========="], {
-		width: 15,
-		height: 15,
-		pos: vec2(150, 260),
-    '=': [
-      sprite('grass'),
-      solid()
-    ],
+	mort.collides("pipe", () => {
+		go("gameover", score.value);
 	});
 
+ //spawning pipes
 
+	loop(1.5, () => {
+
+		const pipePos = rand(0, height() - PIPE_OPEN);
+
+		add([
+			rect(30, 300), 
+			color(0, 206, 62),
+			origin("bot"),
+			pos(width(), pipePos),
+			"pipe",
+		]);
+
+		add([
+			rect(30, 300), 
+			color(0, 206, 62),
+			pos(width(), pipePos + PIPE_OPEN),
+			scale(1, -1),
+			origin("bot"),
+			"pipe",
+			{ passed: false, },
+		]);
+
+	});
+
+	//moving pipes to left
+
+	action("pipe", (pipe) => {
+/*
+		if((score.value+5) <= score.value) {
+			PIPE_SPEED += 10
+		}
+*/
+		pipe.move(-PIPE_SPEED, 0);
+
+		if (pipe.pos.x + pipe.width <= mort.pos.x && pipe.passed === false) {
+			score.value++;
+			score.text = score.value;
+			pipe.passed = true;
+		}
+
+		if (pipe.pos.x + pipe.width < 0) {
+			destroy(pipe);
+		}
+
+	});
+
+	//score text
 	const score = add([
 		pos(20, 20),
 		text("0", 32),
@@ -93,8 +140,11 @@ scene("main", () => {
 
 });
 
+//gameover scene
 
 scene("gameover", (score) => {
+
+	add([rect(1500, 650), color(0, 0, 0), origin("center"), pos(0, 0)])
 
 	add([
 		text(`score: ${score}`, 24),
@@ -108,5 +158,5 @@ scene("gameover", (score) => {
 
 });
 
-
+//run main scene
 start("main")
